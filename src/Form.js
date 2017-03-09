@@ -10,12 +10,16 @@ export default function createForm(WrappedComponent) {
       this.handleChange = this.handleChange.bind(this);
       this.handleValidateChange = this.handleValidateChange.bind(this);
       this.isInputValidating = this.isInputValidating.bind(this);
+      this.validateAllInputs = this.validateAllInputs.bind(this);
+      this.getNameValues = this.getNameValues.bind(this);
       this.cachedFunctions = {};
     }
 
     getChildContext() {
       return {
         isInputValidating: this.isInputValidating,
+        validateAllInputs: this.validateAllInputs,
+        getNameValues: this.getNameValues,
       };
     }
 
@@ -33,6 +37,14 @@ export default function createForm(WrappedComponent) {
       return '';
     }
 
+    getNameValues() {
+      const nameValueMap = {};
+      Object.keys(this.inputdata).forEach((name) => {
+        nameValueMap[name] = this.inputdata[name].value;
+      });
+      return nameValueMap;
+    }
+
     isInputValidating(name) {
       const input = this.getInput(name);
       if (input.isValidating) {
@@ -41,11 +53,11 @@ export default function createForm(WrappedComponent) {
       return false;
     }
 
-    handleValidateChange(name, trigger, value) {
+    handleValidateChange(name, trigger, event) {
       console.log('handleValidateChange');
       const newInput = this.getInput(name);
       newInput.isValidating = true;
-      newInput.value = value;
+      newInput.value = event.target.value;
       this.inputdata[name] = newInput;
       this.forceUpdate();
       const meta = this.metadata[name];
@@ -54,16 +66,17 @@ export default function createForm(WrappedComponent) {
       this.validateInput(name, trigger);
     }
 
-    handleChange(name, value) {
+    handleChange(name, event) {
       this.inputdata[name] = {
         name,
-        value,
+        value: event.target.value,
         isValidating: false,
       }
       this.forceUpdate();
     }
 
-    validateInput(name, trigger) {
+    // 增加 callback 参数，当 validateInput 完成的时候，调用 callback 函数（如果存在）
+    validateInput(name, trigger, callback) {
       // 根据是否给 trigger 这个参数 不给就忽略 trigger 进行验证
       const meta = this.metadata[name];
       let { validates } = meta;
@@ -79,6 +92,10 @@ export default function createForm(WrappedComponent) {
         });
       }
 
+      // 看一下 validates 的长度，每一个 validate 都结束的时候调用 callback
+      let len = validates.length;
+      let errors = [];
+
       // 过滤好了
       validates.forEach((validate) => {
         const { rules } = validate;
@@ -88,9 +105,21 @@ export default function createForm(WrappedComponent) {
 
         // rules 是一个数组
 
-        const validationDone = () => {
+        // TODO: 这里思考一下，这里是对 validate 中每一个要求的验证方案进行验证 但是有时候
+        // 并不需要这样，只要有一个出错，立即调用 callback
+        // 这里先取个名字
+        // 对于出现一个错误就调用 callback，就叫做... 取名真难
+        // 目前是验证所有的
+        const validationDone = (err) => {
           console.log('validationDone called');
           this.inputdata[name].isValidating = false;
+          len--;
+          if (err) {
+            errors.push(err);
+          }
+          if (len === 0 && callback) {
+            callback(errors);
+          }
           this.forceUpdate();
         }
 
@@ -101,11 +130,25 @@ export default function createForm(WrappedComponent) {
       });
     }
 
-    validateInputs({ names }) {
+    validateInputs(names, callback) {
+      const errorMap = {};
+      let len = names.length;
+      const namevalues = this.getNameValues();
       names.forEach((name) => {
-        this.validateInput(name);
+        this.validateInput(name, (errors) => {
+          errorMap[name] = errors;
+          len--;
+          if (len === 0) {
+            callback(errorMap, namevalues);
+          }
+        });
       });
       this.forceUpdate();
+    }
+
+    validateAllInputs(callback) {
+      const names = Object.keys(this.inputdata);
+      this.validateInputs(names, callback);
     }
 
     getCachedFunction(name, trigger, fn) {
@@ -117,6 +160,7 @@ export default function createForm(WrappedComponent) {
         this.cachedFunctions[name] = {};
       }
       this.cachedFunctions[name][trigger] = fn.bind(this, name, trigger);
+      return this.cachedFunctions[name][trigger];
     }
 
     // getFieldProps 是一个会不断被调用的函数 因此要做好性能优化（每次Input出现变动都会被调用）
@@ -149,9 +193,11 @@ export default function createForm(WrappedComponent) {
       // 使用一个 cache 可以防止重复进行 bind 操作
       // 另外，getInputProps 是一个会重复调用的函数，这也是使用 cache 的原因
       validates.forEach((validate) => {
+        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~');
         const triggers = validate.triggers || ['onChange'];
         triggers.forEach((trigger) => {
           inputProps[trigger] = this.getCachedFunction(name, trigger, this.handleValidateChange);
+          console.log(inputProps);
         });
       });
 
@@ -172,6 +218,8 @@ export default function createForm(WrappedComponent) {
     render() {
       const props = {
         getInputProps: this.getInputProps,
+        validateAllInputs: this.validateAllInputs,
+        getNameValues: this.getNameValues,
       };
 
       return <WrappedComponent form={props} />
@@ -180,6 +228,8 @@ export default function createForm(WrappedComponent) {
 
   Form.childContextTypes = {
     isInputValidating: PropTypes.func,
+    validateAllInputs: PropTypes.func,
+    getNameValues: PropTypes.func,
   }
 
   return Form;
