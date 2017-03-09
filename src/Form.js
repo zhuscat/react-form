@@ -54,7 +54,6 @@ export default function createForm(WrappedComponent) {
     }
 
     handleValidateChange(name, trigger, event) {
-      console.log('handleValidateChange');
       const newInput = this.getInput(name);
       newInput.isValidating = true;
       newInput.value = event.target.value;
@@ -117,7 +116,6 @@ export default function createForm(WrappedComponent) {
         // 对于出现一个错误就调用 callback，就叫做... 取名真难
         // 目前是验证所有的
         const validationDone = (err) => {
-          console.log('validationDone called');
           this.inputdata[name].isValidating = false;
           len--;
           if (err) {
@@ -144,7 +142,6 @@ export default function createForm(WrappedComponent) {
         this.validateInput(name, (errors) => {
           errorMap[name] = errors;
           len--;
-          console.log('好了 减少了一个长度')
           if (len === 0) {
             callback(errorMap, namevalues);
           }
@@ -172,8 +169,6 @@ export default function createForm(WrappedComponent) {
 
     // getFieldProps 是一个会不断被调用的函数 因此要做好性能优化（每次Input出现变动都会被调用）
     getInputProps(name, options) {
-      console.log(`getFieldProps called`);
-      console.log(JSON.stringify(this.inputdata));
       if (!this.metadata[name]) {
         const meta = {};
         // validates 的每一个成员是一个 validate 每一个 validate 是一个对象，其包括 rules（规则），trigger（触发时机），rules 是一个数组，每一个成员是一个 rule，可以根据 rule 去生成验证信息
@@ -188,7 +183,6 @@ export default function createForm(WrappedComponent) {
         // const normalizedValidates = {};
         meta.validates = validates;
         this.metadata[name] = meta;
-        console.log(validates);
       }
 
       const inputProps = {};
@@ -200,11 +194,9 @@ export default function createForm(WrappedComponent) {
       // 使用一个 cache 可以防止重复进行 bind 操作
       // 另外，getInputProps 是一个会重复调用的函数，这也是使用 cache 的原因
       validates.forEach((validate) => {
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~');
         const triggers = validate.triggers || ['onChange'];
         triggers.forEach((trigger) => {
           inputProps[trigger] = this.getCachedFunction(name, trigger, this.handleValidateChange);
-          console.log(inputProps);
         });
       });
 
