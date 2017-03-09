@@ -41,7 +41,12 @@ class TestForm extends Component {
         </FormItem>
         <button onClick={(e) => {
           e.preventDefault();
-          console.log(this.props.form.getNameValues());
+          this.props.form.validateAllInputs((err, namevalues) => {
+            console.log('-----button click-----');
+            console.log(err);
+            console.log(namevalues);
+            console.log('-----button click-----');
+          })
         }}>提交</button>
       </form>
     )

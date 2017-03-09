@@ -77,6 +77,12 @@ export default function createForm(WrappedComponent) {
 
     // 增加 callback 参数，当 validateInput 完成的时候，调用 callback 函数（如果存在）
     validateInput(name, trigger, callback) {
+      this.inputdata[name].isValidating = true;
+      // 优化这里
+      if (typeof trigger === 'function') {
+        callback = trigger;
+        trigger = undefined;
+      }
       // 根据是否给 trigger 这个参数 不给就忽略 trigger 进行验证
       const meta = this.metadata[name];
       let { validates } = meta;
@@ -138,6 +144,7 @@ export default function createForm(WrappedComponent) {
         this.validateInput(name, (errors) => {
           errorMap[name] = errors;
           len--;
+          console.log('好了 减少了一个长度')
           if (len === 0) {
             callback(errorMap, namevalues);
           }
@@ -210,7 +217,6 @@ export default function createForm(WrappedComponent) {
       return {
         name,
         value: this.getValue(name) || '',
-        isValidating: this.isInputValidating(),
         ...inputProps,
       };
     }
