@@ -9,10 +9,6 @@ export default class Input extends Component {
     super(props);
   }
 
-  componentWillReceiveProps(nextProps) {
-    console.log(nextProps);
-  }
-
   render() {
     return <input type="text" value={this.props.value} {...this.props} />
   }

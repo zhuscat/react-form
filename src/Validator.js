@@ -46,8 +46,6 @@ Validator.prototype.validate = function validate(formdata, callback) {
   Promise.all(Object.keys($this.description).map((name) => {
     const rules = $this.description[name];
     const value = formdata[name];
-    console.log('------打印一下-----');
-    console.log(rules);
     return Promise.all(rules.map((rule) => {
       const rulePromise = new Promise(function(resolve, reject) {
         const validator = $this._getValidator(rule);

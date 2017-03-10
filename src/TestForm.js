@@ -9,6 +9,7 @@ class TestForm extends Component {
       <form>
         <FormItem>
           <Input {...this.props.form.getInputProps('username', {
+            initialValue: 'username',
             validates: [
               {
                 rules: [{
@@ -45,10 +46,7 @@ class TestForm extends Component {
         <button onClick={(e) => {
           e.preventDefault();
           this.props.form.validateAllInputs((err, namevalues) => {
-            console.log('-----button click-----');
             console.log(err);
-            console.log(namevalues);
-            console.log('-----button click-----');
           })
         }}>提交</button>
       </form>

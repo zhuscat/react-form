@@ -3,7 +3,6 @@ import React, { Component, PropTypes } from 'react';
 export default class FormItem extends Component {
   render() {
     const status = this.context.isInputValidating(this.props.children.props.name);
-    console.log(`status ${status}`);
     return (
       <div>
       { status ? '验证中' : ''}
