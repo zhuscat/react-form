@@ -1,4 +1,5 @@
 import React, { Component, PropTypes } from 'react';
+import Validator from './Validator';
 
 export default function createForm(WrappedComponent) {
   class Form extends Component {
@@ -135,17 +136,45 @@ export default function createForm(WrappedComponent) {
     }
 
     validateInputs(names, callback) {
+      // 对每一个 name 都设置 isValidating 为 true
+      names.forEach((name) => {
+        this.inputdata[name].isValidating = true;
+      });
       const errorMap = {};
       let len = names.length;
       const namevalues = this.getNameValues();
-      names.forEach((name) => {
-        this.validateInput(name, (errors) => {
-          errorMap[name] = errors;
-          len--;
-          if (len === 0) {
-            callback(errorMap, namevalues);
-          }
+      // names.forEach((name) => {
+      //   this.validateInput(name, (errors) => {
+      //     errorMap[name] = errors;
+      //     len--;
+      //     if (len === 0) {
+      //       callback(errorMap, namevalues);
+      //     }
+      //   });
+      // });
+      // this.forceUpdate();
+      /* 刚刚写了一个 Validator 类，考虑到如果按照现在的方式，每验证一个 input
+       * 都要创建一个 Validator 类，但是实际上
+       * Validator 是可以同时验证多个表单元素的，因此这里要修改一下
+       * 改成验证多个表单元素创建一个 Validator
+      */
+      // 首先，把所有的 rules 全部拿到
+      const description = {};
+      Object.keys(this.metadata).forEach((name) => {
+        description[name] = [];
+        const { validates } = this.metadata[name];
+        validates.forEach((validate) => {
+          const { rules } = validate;
+          description[name].push(...rules);
         });
+      });
+      const validator = new Validator(description);
+      validator.validate(namevalues, (errorMap, namevalues) => {
+        names.forEach((name) => {
+          this.inputdata[name].isValidating = false;
+        });
+        callback(errorMap, namevalues);
+        this.forceUpdate();
       });
       this.forceUpdate();
     }
