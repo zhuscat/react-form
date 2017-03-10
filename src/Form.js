@@ -78,12 +78,11 @@ export default function createForm(WrappedComponent) {
     // 增加 callback 参数，当 validateInput 完成的时候，调用 callback 函数（如果存在）
     validateInput(name, trigger, callback) {
       this.inputdata[name].isValidating = true;
-      // 优化这里
+      // 调整参数
       if (typeof trigger === 'function') {
         callback = trigger;
         trigger = undefined;
       }
-      // 根据是否给 trigger 这个参数 不给就忽略 trigger 进行验证
       const meta = this.metadata[name];
       let { validates } = meta;
       // 将符合的 rule 过滤出来
@@ -98,40 +97,17 @@ export default function createForm(WrappedComponent) {
         });
       }
 
-      // 看一下 validates 的长度，每一个 validate 都结束的时候调用 callback
-      let len = validates.length;
-      let errors = [];
-
-      // 过滤好了
+      const namevalues = this.getNameValues();
+      const description = {};
+      description[name] = [];
       validates.forEach((validate) => {
         const { rules } = validate;
-        // 这里开始解析规则
-        // 然后可以开始验证了
-        // 现在暂时假设所有的规则都是有一个成员 validator 的
-
-        // rules 是一个数组
-
-        // TODO: 这里思考一下，这里是对 validate 中每一个要求的验证方案进行验证 但是有时候
-        // 并不需要这样，只要有一个出错，立即调用 callback
-        // 这里先取个名字
-        // 对于出现一个错误就调用 callback，就叫做... 取名真难
-        // 目前是验证所有的
-        const validationDone = (err) => {
-          this.inputdata[name].isValidating = false;
-          len--;
-          if (err) {
-            errors.push(err);
-          }
-          if (len === 0 && callback) {
-            callback(errors);
-          }
-          this.forceUpdate();
-        }
-
-        rules.forEach((rule) => {
-          const { validator } = rule;
-          validator(this.inputdata[name], this.inputdata, validationDone);
-        });
+        description[name].push(...rules);
+      });
+      const validator = new Validator(description);
+      validator.validate(namevalues, (errMap, namevalues) => {
+        this.inputdata[name].isValidating = false;
+        this.forceUpdate();
       });
     }
 

@@ -15,7 +15,7 @@ class TestForm extends Component {
                   required: true
                 },
                 {
-                  validator: (value, formdata, callback) => {
+                  validator: (value, rule, formdata, callback) => {
                     setTimeout(() => {
                       callback(new Error('不合法的输入'));
                     }, 1000);
@@ -31,7 +31,7 @@ class TestForm extends Component {
             validates: [
               {
                 rules: [{
-                  validator: (value, formdata, callback) => {
+                  validator: (value, rule, formdata, callback) => {
                     setTimeout(() => {
                       callback(new Error('不合法输入'));
                     }, 1000);
