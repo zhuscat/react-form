@@ -12,6 +12,9 @@ class TestForm extends Component {
             validates: [
               {
                 rules: [{
+                  required: true
+                },
+                {
                   validator: (value, formdata, callback) => {
                     setTimeout(() => {
                       callback(new Error('不合法的输入'));

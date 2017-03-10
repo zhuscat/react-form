@@ -168,6 +168,8 @@ export default function createForm(WrappedComponent) {
           description[name].push(...rules);
         });
       });
+      console.log('-----Form-----');
+      console.log(description);
       const validator = new Validator(description);
       validator.validate(namevalues, (errorMap, namevalues) => {
         names.forEach((name) => {

@@ -1,47 +1,57 @@
 /*
- * description 的结构
- * {
- *   "name1": [{ "required": true, validates: "" }, { validatates: "" }, { ... }],
- *   "name2": ...
- * }
+ * 结构命名
+ * validates: validate[]
+ * validate: { rules: [], triggers: [] }
+ * rules: rule[]
+ * rule: { required: true, validator: function, name: string }
 */
+
+// 这里说明一下
+// 所有 validator 都是形如 (value, formdata, callback) => {} 形式的函数
+// 其中 callback 形如 (errorMap, formdata) => {}
+
+// 这里要提取出两个策略
+// 策略1 对于一个字段，运行所有 rule，然后 callback 传入错误
+// 策略2 对于一个字段，顺序执行 rule，一旦出现错误 callback 传入错误
+
+const predefinedRule = {
+  required: (value, rule, formdata, callback) => {
+    if (value == null || value === '' || value.length === 0) {
+      callback(new Error('这是必须要填的参数', formdata));
+    } else {
+      callback();
+    }
+  }
+}
 
 function Validator(description) {
   const normalizedDescription = this._normalizeDescription(description);
   this.description = normalizedDescription;
-  console.log(this.description);
 };
+
+Validator.prototype._getValidator = function _getValidator(rule) {
+  if (typeof rule.validator === 'function') {
+    return rule.validator;
+  } else if ('required' in rule) {
+    return predefinedRule['required'];
+  }
+}
 
 Validator.prototype._normalizeDescription = function _normalizeDescription(description) {
   return description;
 };
 
 Validator.prototype.validate = function validate(formdata, callback) {
-  const description = this.description;
-  // TODO: 错误处理
-  Promise.all(Object.keys(this.description).map((name) => {
-    const rules = this.description[name];
+  const $this = this;
+  Promise.all(Object.keys($this.description).map((name) => {
+    const rules = $this.description[name];
     const value = formdata[name];
-    // const errors = [];
-    // let len = rules.length;
-    // 暂定规则
-    // 所有执行完才执行完
-    // const oneRuleDone = (err) => {
-    //   if (err) {
-    //     errors.push(err);
-    //   }
-    //   len--;
-    //   if (len === 0) {
-    //     oneKeyDone(errors);
-    //   }
-    // };
-
-    // 根据规则开始验证
-    // TODO: 处理错误
+    console.log('------打印一下-----');
+    console.log(rules);
     return Promise.all(rules.map((rule) => {
-      // rule.validator(value, formdata, oneRuleDone);
       const rulePromise = new Promise(function(resolve, reject) {
-        rule.validator(value, formdata, function(err) {
+        const validator = $this._getValidator(rule);
+        validator(value, rule, formdata, function(err) {
           resolve(err);
         });
       });
@@ -51,11 +61,11 @@ Validator.prototype.validate = function validate(formdata, callback) {
     });
   })).then(function(errors) {
     const errorMap = {};
-    Object.keys(description).forEach((name, idx) => {
+    Object.keys($this.description).forEach((name, idx) => {
       errorMap[name] = errors[idx];
     });
     callback(errorMap, formdata);
-  })
+  });
 };
 
 export default Validator;
