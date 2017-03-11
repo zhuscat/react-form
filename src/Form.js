@@ -1,11 +1,14 @@
 import React, { Component, PropTypes } from 'react';
 import Validator from './Validator';
 
+// 当触发异步验证的时候，可能会在短时间内多次触发，使用该ID确保返回的是正确的验证回调
+let validateId = 0;
+
 export default function createForm(WrappedComponent) {
   class Form extends Component {
     constructor(props) {
       super(props);
-      this.inputdata = {};
+      this.formdata = {};
       this.metadata = {};
       this.getInputProps = this.getInputProps.bind(this);
       this.handleChange = this.handleChange.bind(this);
@@ -27,13 +30,21 @@ export default function createForm(WrappedComponent) {
     getInput(name) {
       return {
         name,
-        ...this.inputdata[name],
+        ...this.formdata[name],
       };
     }
 
+    setInputs(newInputs) {
+      this.formdata = {
+        ...this.formdata,
+        ...newInputs,
+      }
+      this.forceUpdate();
+    };
+
     getValue(name) {
-      if (this.inputdata[name] && (this.inputdata[name].value != null)) {
-        return this.inputdata[name].value;
+      if (this.formdata[name] && (this.formdata[name].value != null)) {
+        return this.formdata[name].value;
       }
       if (this.metadata[name].initialValue) {
         return this.metadata[name].initialValue;
@@ -44,8 +55,8 @@ export default function createForm(WrappedComponent) {
 
     getNameValues() {
       const nameValueMap = {};
-      Object.keys(this.inputdata).forEach((name) => {
-        nameValueMap[name] = this.inputdata[name].value;
+      Object.keys(this.formdata).forEach((name) => {
+        nameValueMap[name] = this.formdata[name].value;
       });
       return nameValueMap;
     }
@@ -68,8 +79,9 @@ export default function createForm(WrappedComponent) {
       const newInput = this.getInput(name);
       newInput.isValidating = true;
       newInput.value = event.target.value;
-      this.inputdata[name] = newInput;
-      this.forceUpdate();
+      this.setInputs({
+        [name]: newInput,
+      });
       const meta = this.metadata[name];
       const { validates } = meta;
       const rules = validates[trigger];
@@ -77,7 +89,7 @@ export default function createForm(WrappedComponent) {
     }
 
     handleChange(name, event) {
-      this.inputdata[name] = {
+      this.formdata[name] = {
         name,
         value: event.target.value,
         isValidating: false,
@@ -86,7 +98,7 @@ export default function createForm(WrappedComponent) {
     }
 
     validateInput(name, trigger, callback) {
-      this.inputdata[name].isValidating = true;
+      this.formdata[name].isValidating = true;
       // 调整参数
       if (typeof trigger === 'function') {
         callback = trigger;
@@ -116,19 +128,26 @@ export default function createForm(WrappedComponent) {
       const validator = new Validator(description);
       this.testValue = this.testValue + 1;
       validator.validate(namevalues, (errMap, namevalues) => {
-        callback && callback(errMap, namevalues);
-        this.testValue = this.testValue - 1;
-        this.inputdata[name].isValidating = false;
-        this.forceUpdate();
+        if (namevalues[name] === this.formdata[name].value) {
+          callback && callback(errMap, namevalues);
+          this.formdata[name].isValidating = false;
+          this.forceUpdate();
+        }
       });
     }
 
     validateInputs(names, callback) {
+      const newInputs = {};
+      // 形成了闭包
+      const currentValidateId = validateId;
+      ++validateId;
       names.forEach((name) => {
-        this.inputdata[name].isValidating = true;
+        const newInput = this.getInput(name);
+        newInput.isValidating = true;
+        newInputs[name] = newInput;
+        this.metadata[name].validateId = currentValidateId;
       });
-      const errorMap = {};
-      let len = names.length;
+      this.setInputs(newInputs);
       const namevalues = this.getNameValues();
       const description = {};
       Object.keys(this.metadata).forEach((name) => {
@@ -141,13 +160,17 @@ export default function createForm(WrappedComponent) {
       });
       const validator = new Validator(description);
       validator.validate(namevalues, (errorMap, namevalues) => {
+        const newInputs = {};
         names.forEach((name) => {
-          this.inputdata[name].isValidating = false;
+          if (currentValidateId === this.metadata[validateId]) {
+            const newInput = this.getInput(name);
+            newInput.isValidating = false;
+            newInputs[name] = newInput;
+          }
         });
         callback(errorMap, namevalues);
-        this.forceUpdate();
+        this.setInputs(newInputs);
       });
-      this.forceUpdate();
     }
 
     validateAllInputs(callback) {
