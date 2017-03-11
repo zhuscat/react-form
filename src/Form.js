@@ -16,6 +16,7 @@ export default function createForm(WrappedComponent) {
       this.isInputValidating = this.isInputValidating.bind(this);
       this.validateAllInputs = this.validateAllInputs.bind(this);
       this.getNameValues = this.getNameValues.bind(this);
+      this.getInputErrors = this.getInputErrors.bind(this);
       this.cachedFunctions = {};
     }
 
@@ -24,12 +25,14 @@ export default function createForm(WrappedComponent) {
         isInputValidating: this.isInputValidating,
         validateAllInputs: this.validateAllInputs,
         getNameValues: this.getNameValues,
+        getInputErrors: this.getInputErrors,
       };
     }
 
     getInput(name) {
       return {
         name,
+        value: this.getValue(name),
         ...this.formdata[name],
       };
     }
@@ -61,6 +64,14 @@ export default function createForm(WrappedComponent) {
       return nameValueMap;
     }
 
+    getInputErrors(name) {
+      const input = this.getInput(name);
+      if (input.errors) {
+        return input.errors;
+      }
+      return [];
+    }
+
     getNameNeededValidated() {
       return Object.keys(this.metadata).filter((name) => {
         return !!this.metadata[name].validates;
@@ -80,13 +91,7 @@ export default function createForm(WrappedComponent) {
       newInput.value = event.target.value;
       newInput.dirty = true;
       newInput.isValidating = true;
-      this.setInputs({
-        [name]: newInput,
-      });
-      const meta = this.metadata[name];
-      const { validates } = meta;
-      const rules = validates[trigger];
-      this.validateInput(name, trigger);
+      this.validateInput(newInput, trigger);
     }
 
     handleChange(name, trigger, event) {
@@ -100,12 +105,11 @@ export default function createForm(WrappedComponent) {
       });
     }
 
-    validateInput(name, trigger, callback) {
-      const input = this.getInput(name);
+    validateInput(input, trigger, callback) {
       if (input.dirty === false) {
         return;
       }
-      this.formdata[name].isValidating = true;
+      const { name } = input;
       // 调整参数
       if (typeof trigger === 'function') {
         callback = trigger;
@@ -125,6 +129,18 @@ export default function createForm(WrappedComponent) {
         });
       }
 
+      if (validates.length === 0) {
+        return;
+      }
+
+      const currentValidateId = validateId;
+      ++validateId;
+      meta.validateId = currentValidateId;
+      input.isValidating = true;
+      this.setInputs({
+        [name]: input,
+      });
+
       const namevalues = this.getNameValues();
       const description = {};
       description[name] = [];
@@ -133,12 +149,16 @@ export default function createForm(WrappedComponent) {
         description[name].push(...rules);
       });
       const validator = new Validator(description);
-      this.testValue = this.testValue + 1;
       validator.validate(namevalues, (errMap, namevalues) => {
-        if (namevalues[name] === this.formdata[name].value) {
+        if (currentValidateId === this.metadata[name].validateId) {
           callback && callback(errMap, namevalues);
-          this.formdata[name].isValidating = false;
-          this.forceUpdate();
+          const newInput = this.getInput(name);
+          newInput.isValidating = false;
+          newInput.dirty = false;
+          newInput.errors = errMap[name];
+          this.setInputs({
+            [name]: newInput,
+          });
         }
       });
     }
@@ -177,10 +197,17 @@ export default function createForm(WrappedComponent) {
             newInput.isValidating = false;
             newInput.dirty = false;
             newInputs[name] = newInput;
+            newInput.errors = errorMap[name];
           }
         });
-        callback(errorMap, namevalues);
+        // 有些值不是脏值，但是之前出现过错误的，回调的时候也要把错误重新传出去
         this.setInputs(newInputs);
+        const allErrMap = {};
+        names.forEach((name) => {
+          const input = this.getInput(name);
+          allErrMap[name] = input.errors || [];
+        });
+        callback(allErrMap, namevalues);
       });
     }
 
@@ -190,15 +217,11 @@ export default function createForm(WrappedComponent) {
     }
 
     getCachedFunction(name, trigger, fn) {
-      if (this.cachedFunctions[name] && this.cachedFunctions[name][trigger]) {
-        return this.cachedFunctions[name][trigger];
+      const namedCachedFuncs = this.cachedFunctions[name] = this.cachedFunctions[name] || {};
+      if (!namedCachedFuncs[trigger]) {
+        namedCachedFuncs[trigger] = fn.bind(this, name, trigger);
       }
-      // 这里可能能再简化的优雅一点
-      if (!this.cachedFunctions[name]) {
-        this.cachedFunctions[name] = {};
-      }
-      this.cachedFunctions[name][trigger] = fn.bind(this, name, trigger);
-      return this.cachedFunctions[name][trigger];
+      return namedCachedFuncs[trigger];
     }
 
     getInputProps(name, options) {
@@ -245,6 +268,7 @@ export default function createForm(WrappedComponent) {
     isInputValidating: PropTypes.func,
     validateAllInputs: PropTypes.func,
     getNameValues: PropTypes.func,
+    getInputErrors: PropTypes.func,
   }
 
   return Form;

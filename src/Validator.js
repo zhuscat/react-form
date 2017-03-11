@@ -43,6 +43,7 @@ Validator.prototype._normalizeDescription = function _normalizeDescription(descr
 
 Validator.prototype.validate = function validate(formdata, callback) {
   const $this = this;
+  // 未考虑 promise 的错误处理
   Promise.all(Object.keys($this.description).map((name) => {
     const rules = $this.description[name];
     const value = formdata[name];
@@ -55,7 +56,11 @@ Validator.prototype.validate = function validate(formdata, callback) {
       });
       return rulePromise;
     })).then(function(errors) {
-      return errors || [];
+      return errors.filter((err) => {
+        if (err != null) {
+          return err;
+        }
+      });
     });
   })).then(function(errors) {
     const errorMap = {};
