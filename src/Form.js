@@ -77,8 +77,9 @@ export default function createForm(WrappedComponent) {
 
     handleValidateChange(name, trigger, event) {
       const newInput = this.getInput(name);
-      newInput.isValidating = true;
       newInput.value = event.target.value;
+      newInput.dirty = true;
+      newInput.isValidating = true;
       this.setInputs({
         [name]: newInput,
       });
@@ -88,16 +89,22 @@ export default function createForm(WrappedComponent) {
       this.validateInput(name, trigger);
     }
 
-    handleChange(name, event) {
-      this.formdata[name] = {
-        name,
-        value: event.target.value,
-        isValidating: false,
-      }
-      this.forceUpdate();
+    handleChange(name, trigger, event) {
+      const newInput = this.getInput(name);
+      newInput.value = event.target.value;
+      // 说明值发生了改变，如果 dirty 为 false，不需要触发验证
+      newInput.dirty = true;
+      newInput.isValidating = false;
+      this.setInputs({
+        [name]: newInput,
+      });
     }
 
     validateInput(name, trigger, callback) {
+      const input = this.getInput(name);
+      if (input.dirty === false) {
+        return;
+      }
       this.formdata[name].isValidating = true;
       // 调整参数
       if (typeof trigger === 'function') {
@@ -143,6 +150,9 @@ export default function createForm(WrappedComponent) {
       ++validateId;
       names.forEach((name) => {
         const newInput = this.getInput(name);
+        if (newInput.dirty === false) {
+          return;
+        }
         newInput.isValidating = true;
         newInputs[name] = newInput;
         this.metadata[name].validateId = currentValidateId;
@@ -162,9 +172,10 @@ export default function createForm(WrappedComponent) {
       validator.validate(namevalues, (errorMap, namevalues) => {
         const newInputs = {};
         names.forEach((name) => {
-          if (currentValidateId === this.metadata[validateId]) {
+          if (currentValidateId === this.metadata[name].validateId) {
             const newInput = this.getInput(name);
             newInput.isValidating = false;
+            newInput.dirty = false;
             newInputs[name] = newInput;
           }
         });
@@ -214,7 +225,7 @@ export default function createForm(WrappedComponent) {
 
       return {
         name,
-        value: this.getValue(name) || '',
+        value: this.getValue(name),
         ...inputProps,
       };
     }

@@ -5,8 +5,8 @@ export default class FormItem extends Component {
     const status = this.context.isInputValidating(this.props.children.props.name);
     return (
       <div>
-      { status ? '验证中' : ''}
       {this.props.children}
+      { status ? '验证中' : ''}
       </div>
     );
   }

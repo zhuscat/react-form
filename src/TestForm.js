@@ -43,6 +43,22 @@ class TestForm extends Component {
             ]
           })} />
         </FormItem>
+        <FormItem>
+          <Input {...this.props.form.getInputProps('nickname', {
+            validates: [
+              {
+                rules: [{
+                  validator: (value, rule, formdata, callback) => {
+                    setTimeout(() => {
+                      callback(new Error('不合法输入'));
+                    }, 1000);
+                  },
+                }],
+                triggers: ['onBlur'],
+              },
+            ]
+          })} />
+        </FormItem>
         <button onClick={(e) => {
           e.preventDefault();
           this.props.form.validateAllInputs((err, namevalues) => {
