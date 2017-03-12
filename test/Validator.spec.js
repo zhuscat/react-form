@@ -12,7 +12,7 @@ describe('Validator', function() {
         } else {
           callback();
         }
-      }, 100);
+      }, 10);
     };
     const arr = [
       {
@@ -35,7 +35,7 @@ describe('Validator', function() {
       },
     ]
     once(testFunc, arr).then(value => {
-      expect(value).to.equal('one error');
+      expect(value).to.deep.equal(['one error']);
       done();
     });
   });

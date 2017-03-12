@@ -157,7 +157,15 @@ Validator.prototype.validate = function validate(formdata, callback) {
   const $this = this;
   // 未考虑 promise 的错误处理
   Promise.all(Object.keys($this.description).map(name => {
-    const { rules, onlyFirst } = $this.description[name];
+    let rules, onlyFirst;
+    // backward compatibility
+    if (Object.prototype.toString.call($this.description[name]) === '[object Array]') {
+      rules = $this.description[name];
+      onlyFirst = false;
+    } else {
+      rules = $this.description[name].rules;
+      onlyFirst = $this.description[name].onlyFirst;
+    }
     const value = formdata[name];
 
     const dataArr = rules.map((rule) => {
