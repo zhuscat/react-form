@@ -14,6 +14,37 @@
 // 策略1 对于一个字段，运行所有 rule，然后 callback 传入错误
 // 策略2 对于一个字段，顺序执行 rule，一旦出现错误 callback 传入错误
 
+const validateStrategy = {
+  once: (func, arr) => {
+    const promise = new Promise((resolve, reject) => {
+      const next = (i, len) => {
+        const data = arr[i];
+        func(data, (err) => {
+          if (err) {
+            resolve(err);
+          } else if (i === len) {
+            resolve();
+          } else {
+            next(i + 1, len);
+          }
+        });
+      };
+      next(0, arr.length);
+    });
+    return promise;
+  },
+  all: (func, arr) => {
+    const promise = Promise.all(arr.map(data => {
+      return new Promise((resolve, reject) => {
+        func(data, (err) => {
+          resolve(err);
+        });
+      });
+    }));
+    return promise;
+  },
+};
+
 const predefinedRule = {
   required: (value, rule, formdata, callback) => {
     if (value == null || value === '' || value.length === 0) {
@@ -125,24 +156,33 @@ Validator.prototype._normalizeDescription = function _normalizeDescription(descr
 Validator.prototype.validate = function validate(formdata, callback) {
   const $this = this;
   // 未考虑 promise 的错误处理
-  Promise.all(Object.keys($this.description).map((name) => {
+  Promise.all(Object.keys($this.description).map(name => {
     const rules = $this.description[name];
     const value = formdata[name];
-    return Promise.all(rules.map((rule) => {
-      const rulePromise = new Promise(function(resolve, reject) {
-        const validator = $this._getValidator(rule);
-        validator(value, rule, formdata, function(err) {
-          resolve(err);
+
+    const dataArr = rules.map((rule) => {
+      return {
+        value,
+        rule,
+        formdata,
+        validator: $this._getValidator(rule),
+      };
+    });
+
+    const func = (data, callback) => {
+      const { value, rule, formdata, validator } = data;
+      validator(value, rule, formdata, callback);
+    };
+
+    return validateStrategy.all(func, dataArr)
+      .then(function(errors) {
+        return errors.filter((err) => {
+          if (err != null) {
+            return true;
+          }
+          return false;
         });
       });
-      return rulePromise;
-    })).then(function(errors) {
-      return errors.filter((err) => {
-        if (err != null) {
-          return err;
-        }
-      });
-    });
   })).then(function(errors) {
     const errorMap = {};
     Object.keys($this.description).forEach((name, idx) => {
@@ -153,3 +193,5 @@ Validator.prototype.validate = function validate(formdata, callback) {
 };
 
 export default Validator;
+
+export { validateStrategy };
