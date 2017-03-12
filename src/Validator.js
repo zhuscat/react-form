@@ -21,7 +21,82 @@ const predefinedRule = {
     } else {
       callback();
     }
-  }
+  },
+  string: (value, rule, formdata, callback) => {
+    const errors = [];
+
+    if (value === undefined || value === null || value === '' || value.length === 0) {
+      if (rule.required) {
+        errors.push('这是必须的字段');
+      }
+    } else if (Object.prototype.toString.call(value) !== '[object String]') {
+      errors.push('必须要是一个字符串');
+    } else {
+      if ((typeof rule.max === 'number') && (value.length > rule.max)) {
+        errors.push(`字符个数不能大于${rule.max}`);
+      }
+      if ((typeof rule.min === 'number') && (value.length < rule.min)) {
+        errors.push(`字符个数不能小于${rule.min}`);
+      }
+    }
+
+    const combinedErrStr = errors.join(',');
+    if (combinedErrStr.length > 0) {
+      callback(new Error(combinedErrStr));
+    } else {
+      callback();
+    }
+  },
+  number: (value, rule, formdata, callback) => {
+    const errors = [];
+
+    if (value === undefined || value === null || value === '' || value.length === 0) {
+      if (rule.required) {
+        errors.push('这是必须的字段');
+      }
+    } else if (Object.prototype.toString.call(value) !== '[object Number]') {
+      errors.push('必须要是一个数字');
+    } else {
+      if ((typeof rule.max === 'number') && (value > rule.max)) {
+        errors.push(`数字不能大于${rule.max}`);
+      }
+      if ((typeof rule.min === 'number') && (value < rule.min)) {
+        errors.push(`数字不能小于${rule.min}`);
+      }
+    }
+
+    const combinedErrStr = errors.join(',');
+    if (combinedErrStr.length > 0) {
+      callback(new Error(combinedErrStr));
+    } else {
+      callback();
+    }
+  },
+  array: (value, rule, formdata, callback) => {
+    const errors = [];
+
+    if (value === undefined || value === null || value === '' || value.length === 0) {
+      if (rule.required) {
+        errors.push('这是必须的字段');
+      }
+    } else if (Object.prototype.toString.call(value) !== '[object Array]') {
+      errors.push('必须是一个数组');
+    } else {
+      if ((typeof rule.max === 'number') && (value.length > rule.max)) {
+        errors.push(`不能选择多于${rule.max}的个数`);
+      }
+      if ((typeof rule.min === 'number') && (value.length < rule.min)) {
+        errors.push(`不能选择少于${rule.min}的个数`);
+      }
+    }
+
+    const combinedErrStr = errors.join(',');
+    if (combinedErrStr.length > 0) {
+      callback(new Error(combinedErrStr));
+    } else {
+      callback();
+    }
+  },
 }
 
 function Validator(description) {
@@ -32,9 +107,15 @@ function Validator(description) {
 Validator.prototype._getValidator = function _getValidator(rule) {
   if (typeof rule.validator === 'function') {
     return rule.validator;
-  } else if ('required' in rule) {
+  } else if (('required' in rule) && (rule.length === 1)) {
     return predefinedRule['required'];
+  } else if (predefinedRule[rule.type]) {
+    return predefinedRule[rule.type];
   }
+  const dumbValidator = (value, rule, formdata, callback) => {
+    callback();
+  }
+  return dumbValidator;
 }
 
 Validator.prototype._normalizeDescription = function _normalizeDescription(description) {

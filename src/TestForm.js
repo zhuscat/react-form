@@ -47,7 +47,14 @@ class TestForm extends Component {
           <Input {...this.props.form.getInputProps('nickname', {
             validates: [
               {
-                rules: [{
+                rules: [
+                  {
+                    required: true,
+                    type: 'string',
+                    max: 20,
+                    min: 5,
+                  },
+                  {
                   validator: (value, rule, formdata, callback) => {
                     setTimeout(() => {
                       callback(new Error('不合法输入'));

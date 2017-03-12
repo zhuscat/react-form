@@ -53,7 +53,7 @@ export default function createForm(WrappedComponent) {
         return this.metadata[name].initialValue;
       }
       // 最后 return '' 有待商榷
-      return '';
+      return undefined;
     }
 
     getNameValues() {
