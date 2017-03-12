@@ -143,10 +143,13 @@ export default function createForm(WrappedComponent) {
 
       const namevalues = this.getNameValues();
       const description = {};
-      description[name] = [];
+      description[name] = {
+        rules: [],
+        onlyFirst: !!this.metadata[name].onlyFirst,
+      };
       validates.forEach((validate) => {
         const { rules } = validate;
-        description[name].push(...rules);
+        description[name].rules.push(...rules);
       });
       const validator = new Validator(description);
       validator.validate(namevalues, (errMap, namevalues) => {
@@ -180,12 +183,16 @@ export default function createForm(WrappedComponent) {
       this.setInputs(newInputs);
       const namevalues = this.getNameValues();
       const description = {};
+      // 新增了一个策略，onlyFirst: 顺序进行 rule 的检验，发现一个错误就停止
       Object.keys(this.metadata).forEach((name) => {
-        description[name] = [];
+        description[name] = {
+          rules: [],
+          onlyFirst: !!this.metadata[name].onlyFirst,
+        };
         const { validates } = this.metadata[name];
         validates.forEach((validate) => {
           const { rules } = validate;
-          description[name].push(...rules);
+          description[name].rules.push(...rules);
         });
       });
       const validator = new Validator(description);
@@ -227,9 +234,10 @@ export default function createForm(WrappedComponent) {
     getInputProps(name, options) {
       if (!this.metadata[name]) {
         const meta = {};
-        const { validates, initialValue } = options;
+        const { validates, initialValue, onlyFirst } = options;
         meta.initialValue = initialValue;
         meta.validates = validates;
+        meta.onlyFirst = onlyFirst;
         this.metadata[name] = meta;
       }
 

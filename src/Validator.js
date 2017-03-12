@@ -21,9 +21,9 @@ const validateStrategy = {
         const data = arr[i];
         func(data, (err) => {
           if (err) {
-            resolve(err);
+            resolve([err]);
           } else if (i === len) {
-            resolve();
+            resolve([]);
           } else {
             next(i + 1, len);
           }
@@ -138,7 +138,7 @@ function Validator(description) {
 Validator.prototype._getValidator = function _getValidator(rule) {
   if (typeof rule.validator === 'function') {
     return rule.validator;
-  } else if (('required' in rule) && (rule.length === 1)) {
+  } else if (('required' in rule) && (Object.keys(rule).length === 1)) {
     return predefinedRule['required'];
   } else if (predefinedRule[rule.type]) {
     return predefinedRule[rule.type];
@@ -157,7 +157,7 @@ Validator.prototype.validate = function validate(formdata, callback) {
   const $this = this;
   // 未考虑 promise 的错误处理
   Promise.all(Object.keys($this.description).map(name => {
-    const rules = $this.description[name];
+    const { rules, onlyFirst } = $this.description[name];
     const value = formdata[name];
 
     const dataArr = rules.map((rule) => {
@@ -174,15 +174,19 @@ Validator.prototype.validate = function validate(formdata, callback) {
       validator(value, rule, formdata, callback);
     };
 
-    return validateStrategy.all(func, dataArr)
-      .then(function(errors) {
-        return errors.filter((err) => {
-          if (err != null) {
-            return true;
-          }
-          return false;
+    if (onlyFirst) {
+      return validateStrategy.once(func, dataArr);
+    } else {
+      return validateStrategy.all(func, dataArr)
+        .then(function(errors) {
+          return errors.filter((err) => {
+            if (err != null) {
+              return true;
+            }
+            return false;
+          });
         });
-      });
+    }
   })).then(function(errors) {
     const errorMap = {};
     Object.keys($this.description).forEach((name, idx) => {

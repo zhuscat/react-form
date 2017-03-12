@@ -10,6 +10,7 @@ class TestForm extends Component {
         <FormItem>
           <Input {...this.props.form.getInputProps('username', {
             initialValue: 'username',
+            onlyFirst: true, // default false
             validates: [
               {
                 rules: [{
