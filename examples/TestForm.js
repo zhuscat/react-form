@@ -1,7 +1,7 @@
 import React, { Component, PropTypes } from 'react';
-import Input from './Input';
-import createForm from './Form';
-import FormItem from './FormItem';
+import Input from '../src/Input';
+import createForm from '../src/Form';
+import FormItem from '../src/FormItem';
 
 class TestForm extends Component {
   render() {

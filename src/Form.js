@@ -4,7 +4,7 @@ import Validator from './Validator';
 // 当触发异步验证的时候，可能会在短时间内多次触发，使用该ID确保返回的是正确的验证回调
 let validateId = 0;
 
-export default function createForm(WrappedComponent) {
+export default function createForm(WrappedComponent, options = {}) {
   class Form extends Component {
     constructor(props) {
       super(props);
@@ -18,6 +18,16 @@ export default function createForm(WrappedComponent) {
       this.getNameValues = this.getNameValues.bind(this);
       this.getInputErrors = this.getInputErrors.bind(this);
       this.cachedFunctions = {};
+
+      if (options.mapPropsToFormData) {
+        this.formdata = options.mapPropsToFormData(props);
+      }
+    }
+
+    componentWillReceiveProps(nextProps) {
+      if (options.mapPropsToFormData) {
+        this.formdata = options.mapPropsToFormData(nextProps);
+      }
     }
 
     getChildContext() {
@@ -42,6 +52,11 @@ export default function createForm(WrappedComponent) {
         ...this.formdata,
         ...newInputs,
       }
+
+      if (options.onChange) {
+        options.onChange(this.formdata, this.props);
+      }
+
       this.forceUpdate();
     };
 
@@ -87,6 +102,7 @@ export default function createForm(WrappedComponent) {
     }
 
     handleValidateChange(name, trigger, event) {
+      console.log(this.formdata);
       const newInput = this.getInput(name);
       newInput.value = event.target.value;
       newInput.dirty = true;
