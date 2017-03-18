@@ -1,0 +1,9 @@
+.zc-form-item {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.zc-form-item-info {
+  position: absolute;
+  font-size: 12px;
+}
