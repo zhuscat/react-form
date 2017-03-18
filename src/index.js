@@ -1,4 +1,4 @@
-import createForm from './src/Form';
-import FormItem from './src/FormItem';
+import createForm from './Form';
+import FormItem from './FormItem';
 
 export { createForm, FormItem };
