@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/index.js"],"names":["createForm","FormItem"],"mappings":";;;;;;;AAAA;;;;AACA;;;;;;QAESA,U;QAAYC,Q","file":"index.js","sourcesContent":["import createForm from './src/Form';\nimport FormItem from './src/FormItem';\n\nexport { createForm, FormItem };\n"]}

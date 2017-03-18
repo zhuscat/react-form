@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import Input from '../src/Input';
+import Input from './Input';
 import createForm from '../src/Form';
 import FormItem from '../src/FormItem';
 
