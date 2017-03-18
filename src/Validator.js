@@ -22,7 +22,7 @@ const validateStrategy = {
         func(data, (err) => {
           if (err) {
             resolve([err]);
-          } else if (i === len) {
+          } else if (i === len - 1) {
             resolve([]);
           } else {
             next(i + 1, len);

@@ -15,13 +15,6 @@ class TestForm extends Component {
               {
                 rules: [{
                   required: true
-                },
-                {
-                  validator: (value, rule, formdata, callback) => {
-                    setTimeout(() => {
-                      callback(new Error('不合法的输入'));
-                    }, 1000);
-                  },
                 }],
                 triggers: ['onChange', 'onBlur'],
               },
