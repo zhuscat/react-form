@@ -4,9 +4,116 @@
 
 高阶组件
 
-## 使用
+## Usage 使用
 
-开发中...
+*WARNING:* This component is still under development
+
+To install react-form:
+
+```bash
+npm install react-validation-form --save
+```
+
+How to use:
+
+```javascript
+import React, { Component, PropTypes } from 'react';
+import { createForm, FormItem } from 'react-validation-form';
+
+const propTypes = {
+  value: PropTypes.string,
+};
+
+class Input extends Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    return <input type="text" value={this.props.value} {...this.props} />
+  }
+}
+
+Input.propTypes = propTypes;
+
+class TestForm extends Component {
+  render() {
+    return (
+      <form>
+        <FormItem>
+          <Input {...this.props.form.getInputProps('username', {
+            initialValue: 'username',
+            onlyFirst: true, // default false
+            validates: [
+              {
+                rules: [{
+                  required: true
+                },
+                {
+                  validator: (value, rule, formdata, callback) => {
+                    setTimeout(() => {
+                      callback(new Error('不合法的输入'));
+                    }, 1000);
+                  },
+                }],
+                triggers: ['onChange', 'onBlur'],
+              },
+            ]
+          })} />
+        </FormItem>
+        <FormItem>
+          <Input {...this.props.form.getInputProps('password', {
+            validates: [
+              {
+                rules: [{
+                  validator: (value, rule, formdata, callback) => {
+                    setTimeout(() => {
+                      callback(new Error('不合法输入'));
+                    }, 1000);
+                  },
+                }],
+                triggers: ['onChange', 'onBlur'],
+              },
+            ]
+          })} />
+        </FormItem>
+        <FormItem>
+          <Input {...this.props.form.getInputProps('nickname', {
+            validates: [
+              {
+                rules: [
+                  {
+                    required: true,
+                    type: 'string',
+                    max: 20,
+                    min: 5,
+                  },
+                  {
+                  validator: (value, rule, formdata, callback) => {
+                    setTimeout(() => {
+                      callback(new Error('不合法输入'));
+                    }, 1000);
+                  },
+                }],
+                triggers: ['onBlur'],
+              },
+            ]
+          })} />
+        </FormItem>
+        <button onClick={(e) => {
+          e.preventDefault();
+          this.props.form.validateAllInputs((err, namevalues) => {
+            console.log(err);
+          })
+        }}>提交</button>
+      </form>
+    )
+  }
+}
+
+// now you can use the form.
+export default createForm(TestForm);
+```
 
 ## 问题记录
 
