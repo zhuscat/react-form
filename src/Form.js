@@ -64,7 +64,7 @@ export default function createForm(WrappedComponent, options = {}) {
       if (this.formdata[name] && (this.formdata[name].value != null)) {
         return this.formdata[name].value;
       }
-      if (this.metadata[name].initialValue) {
+      if (this.metadata[name].initialValue != null) {
         return this.metadata[name].initialValue;
       }
       // 最后 return '' 有待商榷
