@@ -1,6 +1,6 @@
 {
   "name": "react-validation-form",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A form component for React Library, supporting form validation.",
   "main": "./lib/index.js",
   "scripts": {
