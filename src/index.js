@@ -1,4 +1,4 @@
 import createForm from './Form';
-import FormItem from './FormItem';
+import FormItem, { createFormItem } from './FormItem';
 
-export { createForm, FormItem };
+export { createForm, FormItem, createFormItem };
