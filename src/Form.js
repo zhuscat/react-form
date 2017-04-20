@@ -284,7 +284,7 @@ export default function createForm(WrappedComponent, options = {}) {
         getNameValues: this.getNameValues,
       };
 
-      return <WrappedComponent form={props} />
+      return <WrappedComponent {...this.props} form={props} />
     }
   }
 
