@@ -102,7 +102,6 @@ export default function createForm(WrappedComponent, options = {}) {
     }
 
     handleValidateChange(name, trigger, event) {
-      console.log(this.formdata);
       const newInput = this.getInput(name);
       newInput.value = event.target.value;
       newInput.dirty = true;
